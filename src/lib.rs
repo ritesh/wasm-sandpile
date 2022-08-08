@@ -30,7 +30,7 @@ impl Universe {
         let mut rng = rand::thread_rng();
         let between: Uniform<usize> = Uniform::from(0..10);
         let cells = Array2D::filled_by_row_major(|| between.sample(&mut rng), WIDTH, HEIGHT);
-        println!("Cells {:?}", cells);
+        //  println!("Cells {:?}", cells);
         Universe {
             width: WIDTH,
             height: HEIGHT,
@@ -51,8 +51,11 @@ impl Universe {
     }
     pub fn tick(&mut self) {
         if !self.stable() {
+            // print!("Unstable!");
             self.topple()
         } else {
+            print!("Stable!.......");
+            println!("{:?}", self.cells());
             return;
         }
         let mut next = self.cells.clone();
@@ -78,11 +81,13 @@ impl Universe {
     }
     pub fn topple(&mut self) {
         let mut next = self.cells.clone();
-        const W: usize = 110;
-        const H: usize = 110;
+        // let h: usize = self.height();
+        // let w: usize = self.width();
+        const h: usize = 110;
+        const w: usize = 110;
         //TODO: pick cells at random, rather than from 0,0 to W, H
-        for i in 0..W {
-            for j in 0..H {
+        for i in 0..=h {
+            for j in 0..=w {
                 if let Some(v) = next.get(i, j) {
                     //Unstable
                     if *v >= 4 {
@@ -90,35 +95,91 @@ impl Universe {
                         match (i, j) {
                             //corners
                             (0, 0) => {
-                                //Top corner
-                                let n1 = next.get(i + 1, 0);
-                                let n2 = next.get(0, j + 1);
-                                let _ = next.set(i + 1, 0, n1.unwrap() + 1);
-                                let _ = next.set(0, j + 1, n2.unwrap() + 1);
+                                //Top left corner
+                                let n1 = self.cells.get(i + 1, 0);
+                                let n2 = self.cells.get(0, j + 1);
+                                //TODO: handle errors
+                                let _ = next.set(i + 1, 0, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(0, j + 1, n2.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            (0, W) => {
+                            (0, w) => {
                                 //Top right corner
+                                let n1 = self.cells.get(0, w - 1);
+                                let n2 = self.cells.get(1, w);
+                                let _ = next.set(0, w - 1, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(1, w, n2.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            (H, 0) => {
+                            (h, 0) => {
                                 //Bottom left corner
+                                let n1 = self.cells.get(h - 1, 0);
+                                let n2 = self.cells.get(h, 1);
+                                let _ = next.set(h - 1, 0, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(h, 1, n2.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            (W, H) => {
+                            (h, w) => {
                                 //Bottom right corner
+                                let n1 = self.cells.get(h - 1, w);
+                                let n2 = self.cells.get(h, w - 1);
+                                let _ = next.set(h - 1, w, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(h, w - 1, n2.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            //Edges
-                            (1..=W, 0) => {
+                            //Top edge
+                            (0, j) => {
                                 //Top edge
+                                let n1 = self.cells.get(0, j - 1);
+                                let n2 = self.cells.get(0, j + 1);
+                                let n3 = self.cells.get(1, j);
+                                let _ = next.set(0, j - 1, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(0, j + 1, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(1, j + 1, n3.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            (W, 1..=H) => {
-                                //Right edge
-                            }
-                            (0, 1..=H) => {
-                                //Left edge
-                            }
-                            (1..=W, H) => {
+                            (h, j) => {
                                 //Bottom edge
+                                let n1 = self.cells.get(h, j - 1);
+                                let n2 = self.cells.get(h, j + 1);
+                                let n3 = self.cells.get(h - 1, j);
+                                let _ = next.set(h, j - 1, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(h, j + 1, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(h - 1, j, n3.unwrap_or(&0) + 1);
+                                continue;
                             }
-                            (_, _) => {}
+                            (i, w) => {
+                                //Right edge
+                                let n1 = self.cells.get(i - 1, j);
+                                let n2 = self.cells.get(i, j - 1);
+                                let n3 = self.cells.get(i + 1, j);
+                                let _ = next.set(i - 1, j, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(i, j - 1, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(i + 1, j, n3.unwrap_or(&0) + 1);
+                                continue;
+                            }
+                            (i, 0) => {
+                                //Left edge
+                                let n1 = self.cells.get(i - 1, 0);
+                                let n2 = self.cells.get(i + 1, 0);
+                                let n3 = self.cells.get(i, 1);
+                                let _ = next.set(i - 1, 0, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(i + 1, 0, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(i, 1, n3.unwrap_or(&0) + 1);
+                                continue;
+                            }
+                            //Everything else
+                            (i, j) => {
+                                let n1 = self.cells.get(i - 1, j);
+                                let n2 = self.cells.get(i + 1, j);
+                                let n3 = self.cells.get(i, j - 1);
+                                let n4 = self.cells.get(i, j + 1);
+                                let _ = next.set(i - 1, j, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(i + 1, j, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(i, j - 1, n3.unwrap_or(&0) + 1);
+                                let _ = next.set(i, j + 1, n4.unwrap_or(&0) + 1);
+                                continue;
+                            }
                         }
                     }
                 }
@@ -135,9 +196,8 @@ mod tests {
     #[test]
     fn tick() {
         let mut u = Universe::new();
-        for _i in 0..1000 {
+        loop {
             u.tick();
-            println!("{:?}", u.cells());
         }
     }
     // #[test]
