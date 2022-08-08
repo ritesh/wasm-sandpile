@@ -25,15 +25,15 @@ pub struct Universe {
 #[wasm_bindgen]
 impl Universe {
     pub fn new() -> Universe {
-        const width: usize = 110;
-        const height: usize = 110;
+        const WIDTH: usize = 110;
+        const HEIGHT: usize = 110;
         let mut rng = rand::thread_rng();
         let between: Uniform<usize> = Uniform::from(0..10);
-        let cells = Array2D::filled_by_row_major(|| between.sample(&mut rng), width, height);
+        let cells = Array2D::filled_by_row_major(|| between.sample(&mut rng), WIDTH, HEIGHT);
         println!("Cells {:?}", cells);
         Universe {
-            width,
-            height,
+            width: WIDTH,
+            height: HEIGHT,
             cells,
         }
     }
@@ -80,20 +80,26 @@ impl Universe {
         let mut next = self.cells.clone();
         const W: usize = 110;
         const H: usize = 110;
+        //TODO: pick cells at random, rather than from 0,0 to W, H
         for i in 0..W {
             for j in 0..H {
-                if let Some(v) = next.get_mut(i, j) {
+                if let Some(v) = next.get(i, j) {
                     //Unstable
                     if *v >= 4 {
+                        let _ = next.set(i, j, *v - 4);
                         match (i, j) {
                             //corners
                             (0, 0) => {
                                 //Top corner
+                                let n1 = next.get(i + 1, 0);
+                                let n2 = next.get(0, j + 1);
+                                let _ = next.set(i + 1, 0, n1.unwrap() + 1);
+                                let _ = next.set(0, j + 1, n2.unwrap() + 1);
                             }
                             (0, W) => {
                                 //Top right corner
                             }
-                            (0, H) => {
+                            (H, 0) => {
                                 //Bottom left corner
                             }
                             (W, H) => {
