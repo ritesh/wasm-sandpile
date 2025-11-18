@@ -58,6 +58,35 @@ If you have all prerequisites installed, you can run everything in one go:
 wasm-pack build --target bundler && cd www && npm install && npm run build && npm start
 ```
 
+## GitHub Pages Deployment
+
+This project includes a GitHub Actions workflow that automatically builds and deploys the visualization to GitHub Pages.
+
+### Enabling GitHub Pages
+
+1. Go to your repository's **Settings** → **Pages**
+2. Under **Source**, select **GitHub Actions**
+3. Push changes to the `main` or `master` branch
+4. The workflow will automatically build and deploy the site
+5. Your visualization will be available at `https://<username>.github.io/<repository-name>/`
+
+### Manual Deployment
+
+The workflow can also be triggered manually:
+
+1. Go to **Actions** tab in your repository
+2. Select **Deploy to GitHub Pages** workflow
+3. Click **Run workflow**
+
+### Workflow Details
+
+The deployment workflow (`.github/workflows/deploy.yml`):
+- Installs Rust and wasm-pack
+- Builds the WebAssembly module
+- Installs Node.js dependencies
+- Builds the web application
+- Deploys the `www/dist` folder to GitHub Pages
+
 ## Project Structure
 
 ```
@@ -90,6 +119,24 @@ wasm-sandpile/
 
 ### Running Tests
 
+**Rust Tests:**
+```bash
+cargo test --lib
+```
+
+**JavaScript Tests:**
+```bash
+cd www
+npm test
+```
+
+**Test Coverage:**
+```bash
+cd www
+npm run test:coverage
+```
+
+**WASM Browser Tests:**
 ```bash
 wasm-pack test --headless --firefox
 ```
