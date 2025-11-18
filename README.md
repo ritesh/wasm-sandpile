@@ -1,69 +1,162 @@
-<div align="center">
+# Abelian Sandpile Visualization
 
-  <h1><code>wasm-pack-template</code></h1>
-
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
-
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
-
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
-
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
-</div>
+A WebAssembly implementation of the Abelian Sandpile Model with interactive graphical visualization.
 
 ## About
 
-[**📚 Read this template tutorial! 📚**][template-docs]
+The [Abelian Sandpile Model](https://en.wikipedia.org/wiki/Abelian_sandpile_model) is a cellular automaton that demonstrates self-organized criticality. Each cell in a grid contains a number of "grains" (0-3). When a cell accumulates 4 or more grains, it "topples", distributing one grain to each of its four neighbors. This simple rule creates beautiful fractal patterns and emergent complexity.
 
-This template is designed for compiling Rust libraries into WebAssembly and
-publishing the resulting package to NPM.
+This project implements the sandpile algorithm in Rust, compiled to WebAssembly for fast browser-based execution, with an interactive canvas visualization.
 
-Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
-templates and usages of `wasm-pack`.
+## Features
 
-[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
-[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
+- Real-time sandpile simulation in the browser
+- Color-coded visualization (different colors for 0-4+ grains)
+- Interactive controls: Start/Stop, Step-by-step execution, Reset
+- Adjustable simulation speed (1-60 fps)
+- Statistics display (tick count, grid size, stability status)
+- 110x110 grid with automatic toppling
 
-## 🚴 Usage
+## Building and Running
 
-### 🐑 Use `cargo generate` to Clone this Template
+### Prerequisites
 
-[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
+- [Rust](https://www.rust-lang.org/tools/install) with `cargo`
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+- [Node.js and npm](https://nodejs.org/)
+
+### Build Steps
+
+1. **Build the WebAssembly module:**
+   ```bash
+   wasm-pack build --target bundler
+   ```
+
+2. **Install web dependencies:**
+   ```bash
+   cd www
+   npm install
+   ```
+
+3. **Build the web application:**
+   ```bash
+   npm run build
+   ```
+
+4. **Serve the application:**
+   ```bash
+   npm start
+   ```
+
+5. **Open your browser to:** `http://localhost:8080`
+
+### Quick Start
+
+If you have all prerequisites installed, you can run everything in one go:
+
+```bash
+wasm-pack build --target bundler && cd www && npm install && npm run build && npm start
+```
+
+## GitHub Pages Deployment
+
+This project includes a GitHub Actions workflow that automatically builds and deploys the visualization to GitHub Pages.
+
+### Enabling GitHub Pages
+
+1. Go to your repository's **Settings** → **Pages**
+2. Under **Source**, select **GitHub Actions**
+3. Push changes to the `main` or `master` branch
+4. The workflow will automatically build and deploy the site
+5. Your visualization will be available at `https://<username>.github.io/<repository-name>/`
+
+### Manual Deployment
+
+The workflow can also be triggered manually:
+
+1. Go to **Actions** tab in your repository
+2. Select **Deploy to GitHub Pages** workflow
+3. Click **Run workflow**
+
+### Workflow Details
+
+The deployment workflow (`.github/workflows/deploy.yml`):
+- Installs Rust and wasm-pack
+- Builds the WebAssembly module
+- Installs Node.js dependencies
+- Builds the web application
+- Deploys the `www/dist` folder to GitHub Pages
+
+## Project Structure
 
 ```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
-cd my-project
+wasm-sandpile/
+├── src/
+│   ├── lib.rs          # Rust implementation of sandpile algorithm
+│   └── utils.rs        # Utility functions
+├── www/
+│   ├── index.html      # Web UI
+│   ├── index.js        # JavaScript visualization code
+│   ├── bootstrap.js    # WASM loader
+│   ├── package.json    # NPM dependencies
+│   └── webpack.config.js # Webpack configuration
+├── Cargo.toml          # Rust dependencies
+└── README.md
 ```
 
-### 🛠️ Build with `wasm-pack build`
+## How It Works
 
-```
-wasm-pack build
+1. **Rust Core**: The sandpile logic is implemented in Rust for performance
+2. **WebAssembly**: Rust code is compiled to WASM for browser execution
+3. **JavaScript Visualization**: Canvas API renders the grid with color coding:
+   - Black: 0 grains
+   - Blue: 1 grain
+   - Green: 2 grains
+   - Yellow: 3 grains
+   - Red: 4+ grains (toppling state)
+
+## Development
+
+### Running Tests
+
+**Rust Tests:**
+```bash
+cargo test --lib
 ```
 
-### 🔬 Test in Headless Browsers with `wasm-pack test`
-
+**JavaScript Tests:**
+```bash
+cd www
+npm test
 ```
+
+**Test Coverage:**
+```bash
+cd www
+npm run test:coverage
+```
+
+**WASM Browser Tests:**
+```bash
 wasm-pack test --headless --firefox
 ```
 
-### 🎁 Publish to NPM with `wasm-pack publish`
+### Modifying the Grid Size
 
+Edit the constants in `src/lib.rs`:
+
+```rust
+const WIDTH: usize = 110;
+const HEIGHT: usize = 110;
 ```
-wasm-pack publish
+
+Don't forget to rebuild after changes:
+
+```bash
+wasm-pack build --target bundler
+cd www && npm run build
 ```
 
-## 🔋 Batteries Included
+## License
 
-* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
-  between WebAssembly and JavaScript.
-* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
-  for logging panic messages to the developer console.
-* [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
-  for small code size.
+Licensed under either of Apache License, Version 2.0 or MIT license at your option.

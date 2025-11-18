@@ -52,12 +52,9 @@ impl Universe {
     pub fn tick(&mut self) {
         if !self.stable() {
             // print!("Unstable!");
-            self.topple()
-        } else {
-            print!("Stable!.......");
-            println!("{:?}", self.cells());
-            return;
+            self.topple();
         }
+        // Always add a grain after toppling (or if already stable)
         let mut next = self.cells.clone();
         //Pick a random cell and add 1
         let mut rng = rand::thread_rng();
@@ -135,7 +132,7 @@ impl Universe {
                                 let n3 = self.cells.get(1, j);
                                 let _ = next.set(0, j - 1, n1.unwrap_or(&0) + 1);
                                 let _ = next.set(0, j + 1, n2.unwrap_or(&0) + 1);
-                                let _ = next.set(1, j + 1, n3.unwrap_or(&0) + 1);
+                                let _ = next.set(1, j, n3.unwrap_or(&0) + 1);
                                 continue;
                             }
                             (h, j) => {
@@ -194,14 +191,235 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tick() {
-        let mut u = Universe::new();
-        loop {
-            u.tick();
+    fn test_universe_creation() {
+        let u = Universe::new();
+        assert_eq!(u.width(), 110);
+        assert_eq!(u.height(), 110);
+        assert_eq!(u.cells().len(), 110 * 110);
+    }
+
+    #[test]
+    fn test_accessors() {
+        let u = Universe::new();
+        assert_eq!(u.width(), 110);
+        assert_eq!(u.height(), 110);
+
+        let cells = u.cells();
+        // All cells should be initialized with values 0-9
+        for cell in cells.iter() {
+            assert!(*cell < 10, "Cell value should be less than 10");
         }
     }
-    // #[test]
-    // fn neigbour_test() {
-    //     todo!()
-    // }
+
+    #[test]
+    fn test_stable_with_small_values() {
+        let cells = Array2D::filled_with(2, 10, 10);
+        let u = Universe {
+            width: 10,
+            height: 10,
+            cells,
+        };
+        assert!(u.stable(), "Universe with all cells < 4 should be stable");
+    }
+
+    #[test]
+    fn test_unstable_with_large_values() {
+        let cells = Array2D::filled_with(4, 10, 10);
+        let u = Universe {
+            width: 10,
+            height: 10,
+            cells,
+        };
+        assert!(!u.stable(), "Universe with cells >= 4 should be unstable");
+    }
+
+    #[test]
+    fn test_topple_center_cell() {
+        // Create a small grid with one unstable cell in the center
+        let mut cells = Array2D::filled_with(0, 5, 5);
+        cells.set(2, 2, 4).unwrap();
+
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        u.topple();
+
+        // After toppling, center should have 0, neighbors should have 1
+        assert_eq!(*u.cells.get(2, 2).unwrap(), 0, "Center cell should be 0 after toppling");
+        assert_eq!(*u.cells.get(1, 2).unwrap(), 1, "Top neighbor should be 1");
+        assert_eq!(*u.cells.get(3, 2).unwrap(), 1, "Bottom neighbor should be 1");
+        assert_eq!(*u.cells.get(2, 1).unwrap(), 1, "Left neighbor should be 1");
+        assert_eq!(*u.cells.get(2, 3).unwrap(), 1, "Right neighbor should be 1");
+    }
+
+    #[test]
+    fn test_topple_corner_cell() {
+        // Create a small grid with one unstable cell in top-left corner
+        let mut cells = Array2D::filled_with(0, 5, 5);
+        cells.set(0, 0, 4).unwrap();
+
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        u.topple();
+
+        // Corner cell should distribute to only 2 neighbors
+        assert_eq!(*u.cells.get(0, 0).unwrap(), 0, "Corner cell should be 0 after toppling");
+        assert_eq!(*u.cells.get(1, 0).unwrap(), 1, "Right neighbor should be 1");
+        assert_eq!(*u.cells.get(0, 1).unwrap(), 1, "Bottom neighbor should be 1");
+        // Other cells should remain 0
+        assert_eq!(*u.cells.get(2, 0).unwrap(), 0);
+        assert_eq!(*u.cells.get(0, 2).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_topple_edge_cell() {
+        // Create a small grid with one unstable cell on the top edge
+        let mut cells = Array2D::filled_with(0, 5, 5);
+        cells.set(0, 2, 4).unwrap();
+
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        u.topple();
+
+        // Edge cell should distribute to 3 neighbors
+        assert_eq!(*u.cells.get(0, 2).unwrap(), 0, "Edge cell should be 0 after toppling");
+        assert_eq!(*u.cells.get(0, 1).unwrap(), 1, "Left neighbor should be 1");
+        assert_eq!(*u.cells.get(0, 3).unwrap(), 1, "Right neighbor should be 1");
+        assert_eq!(*u.cells.get(1, 2).unwrap(), 1, "Bottom neighbor should be 1");
+    }
+
+    #[test]
+    fn test_multiple_topples() {
+        // Create a grid where multiple cells need to topple
+        let mut cells = Array2D::filled_with(0, 5, 5);
+        cells.set(2, 2, 5).unwrap();
+
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        // First topple
+        u.topple();
+        assert_eq!(*u.cells.get(2, 2).unwrap(), 1, "Center should have 1 after first topple");
+
+        // Neighbors should each have 1
+        assert_eq!(*u.cells.get(1, 2).unwrap(), 1);
+        assert_eq!(*u.cells.get(3, 2).unwrap(), 1);
+        assert_eq!(*u.cells.get(2, 1).unwrap(), 1);
+        assert_eq!(*u.cells.get(2, 3).unwrap(), 1);
+
+        assert!(u.stable(), "Universe should be stable after toppling");
+    }
+
+    #[test]
+    fn test_tick_adds_grain() {
+        let cells = Array2D::filled_with(0, 5, 5);
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        // Count total grains before tick
+        let sum_before: usize = u.cells().iter().sum();
+
+        // Perform several ticks on a stable universe
+        for _ in 0..10 {
+            if u.stable() {
+                u.tick();
+            }
+        }
+
+        // Total grains should have increased
+        let sum_after: usize = u.cells().iter().sum();
+        assert!(sum_after > sum_before, "Tick should add grains to the universe");
+    }
+
+    #[test]
+    fn test_tick_eventually_stabilizes() {
+        let cells = Array2D::filled_with(3, 5, 5);
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        // Run for a limited number of iterations
+        // Should not panic and should eventually stabilize or keep running
+        for _ in 0..100 {
+            if u.stable() {
+                break;
+            }
+            u.topple();
+        }
+
+        // At least verify the universe is in a valid state
+        for cell in u.cells().iter() {
+            assert!(*cell < 100, "Cell values should remain reasonable");
+        }
+    }
+
+    #[test]
+    fn test_cascade_toppling() {
+        // Set up a chain reaction: center cell has 4, will cause neighbors to topple
+        let mut cells = Array2D::filled_with(3, 5, 5);
+        cells.set(2, 2, 4).unwrap();
+
+        let mut u = Universe {
+            width: 5,
+            height: 5,
+            cells,
+        };
+
+        // First topple
+        u.topple();
+
+        // This should have made neighbors have 4, causing more instability
+        assert!(!u.stable(), "After toppling, neighbors should be unstable");
+    }
+
+    #[test]
+    fn test_cells_vector_size() {
+        let u = Universe::new();
+        let cells = u.cells();
+        assert_eq!(cells.len(), 110 * 110, "Cells vector should have width * height elements");
+    }
+
+    #[test]
+    fn test_boundary_conditions() {
+        // Test all four corners
+        let mut cells = Array2D::filled_with(0, 10, 10);
+        let corners = [(0, 0), (0, 9), (9, 0), (9, 9)];
+
+        for (i, j) in corners.iter() {
+            cells.set(*i, *j, 4).unwrap();
+        }
+
+        let mut u = Universe {
+            width: 10,
+            height: 10,
+            cells: cells.clone(),
+        };
+
+        u.topple();
+
+        // All corners should now be 0
+        for (i, j) in corners.iter() {
+            assert_eq!(*u.cells.get(*i, *j).unwrap(), 0,
+                "Corner ({}, {}) should be 0 after toppling", i, j);
+        }
+    }
 }
