@@ -1,0 +1,17 @@
+{
+  "name": "wasm-sandpile-www",
+  "version": "0.1.0",
+  "description": "Web interface for the Abelian Sandpile WASM implementation",
+  "author": "Ritesh Sinha",
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack serve"
+  },
+  "devDependencies": {
+    "@wasm-tool/wasm-pack-plugin": "*",
+    "html-webpack-plugin": "*",
+    "webpack": "*",
+    "webpack-cli": "*",
+    "webpack-dev-server": "*"
+  }
+}

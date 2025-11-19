@@ -1,19 +1,11 @@
 mod utils;
-extern crate colored;
-extern crate rand;
 
-use crate::rand::distributions::Distribution;
 use array2d::Array2D;
-use rand::distributions::Uniform;
+use rand::distr::Uniform;
+use rand::prelude::Distribution;
 use rand::Rng;
 
 use wasm_bindgen::prelude::*;
-
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub struct Universe {
@@ -27,9 +19,12 @@ impl Universe {
     pub fn new() -> Universe {
         const WIDTH: usize = 110;
         const HEIGHT: usize = 110;
-        let mut rng = rand::thread_rng();
-        let between: Uniform<usize> = Uniform::from(0..10);
-        let cells = Array2D::filled_by_row_major(|| between.sample(&mut rng), WIDTH, HEIGHT);
+        let mut rng = rand::rng();
+        let cells = Array2D::filled_by_row_major(
+            || Uniform::<usize>::new(0, 10).unwrap().sample(&mut rng),
+            WIDTH,
+            HEIGHT,
+        );
         //  println!("Cells {:?}", cells);
         Universe {
             width: WIDTH,
@@ -51,17 +46,16 @@ impl Universe {
     }
     pub fn tick(&mut self) {
         if !self.stable() {
-            // print!("Unstable!");
             self.topple();
         }
         // Always add a grain after toppling (or if already stable)
         let mut next = self.cells.clone();
         //Pick a random cell and add 1
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         //TODO uniform distribution:
         //https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html
-        let randomx: usize = rng.gen_range(0..self.width);
-        let randomy: usize = rng.gen_range(0..self.height);
+        let randomx: usize = rng.random_range(0..self.width);
+        let randomy: usize = rng.random_range(0..self.height);
         next.get_mut(randomx, randomy).map(|v| *v += 1);
         self.cells = next;
     }
@@ -80,11 +74,11 @@ impl Universe {
         let mut next = self.cells.clone();
         // let h: usize = self.height();
         // let w: usize = self.width();
-        const h: usize = 110;
-        const w: usize = 110;
+        const H: usize = 110;
+        const W: usize = 110;
         //TODO: pick cells at random, rather than from 0,0 to W, H
-        for i in 0..=h {
-            for j in 0..=w {
+        for i in 0..=H {
+            for j in 0..=W {
                 if let Some(v) = next.get(i, j) {
                     //Unstable
                     if *v >= 4 {
@@ -100,28 +94,28 @@ impl Universe {
                                 let _ = next.set(0, j + 1, n2.unwrap_or(&0) + 1);
                                 continue;
                             }
-                            (0, w) => {
+                            (0, W) => {
                                 //Top right corner
-                                let n1 = self.cells.get(0, w - 1);
-                                let n2 = self.cells.get(1, w);
-                                let _ = next.set(0, w - 1, n1.unwrap_or(&0) + 1);
-                                let _ = next.set(1, w, n2.unwrap_or(&0) + 1);
+                                let n1 = self.cells.get(0, W - 1);
+                                let n2 = self.cells.get(1, W);
+                                let _ = next.set(0, W - 1, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(1, W, n2.unwrap_or(&0) + 1);
                                 continue;
                             }
-                            (h, 0) => {
+                            (H, 0) => {
                                 //Bottom left corner
-                                let n1 = self.cells.get(h - 1, 0);
-                                let n2 = self.cells.get(h, 1);
-                                let _ = next.set(h - 1, 0, n1.unwrap_or(&0) + 1);
-                                let _ = next.set(h, 1, n2.unwrap_or(&0) + 1);
+                                let n1 = self.cells.get(H - 1, 0);
+                                let n2 = self.cells.get(H, 1);
+                                let _ = next.set(H - 1, 0, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(H, 1, n2.unwrap_or(&0) + 1);
                                 continue;
                             }
-                            (h, w) => {
+                            (H, W) => {
                                 //Bottom right corner
-                                let n1 = self.cells.get(h - 1, w);
-                                let n2 = self.cells.get(h, w - 1);
-                                let _ = next.set(h - 1, w, n1.unwrap_or(&0) + 1);
-                                let _ = next.set(h, w - 1, n2.unwrap_or(&0) + 1);
+                                let n1 = self.cells.get(H - 1, W);
+                                let n2 = self.cells.get(H, W - 1);
+                                let _ = next.set(H - 1, W, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(H, W - 1, n2.unwrap_or(&0) + 1);
                                 continue;
                             }
                             //Top edge
@@ -135,17 +129,17 @@ impl Universe {
                                 let _ = next.set(1, j, n3.unwrap_or(&0) + 1);
                                 continue;
                             }
-                            (h, j) => {
+                            (H, j) => {
                                 //Bottom edge
-                                let n1 = self.cells.get(h, j - 1);
-                                let n2 = self.cells.get(h, j + 1);
-                                let n3 = self.cells.get(h - 1, j);
-                                let _ = next.set(h, j - 1, n1.unwrap_or(&0) + 1);
-                                let _ = next.set(h, j + 1, n2.unwrap_or(&0) + 1);
-                                let _ = next.set(h - 1, j, n3.unwrap_or(&0) + 1);
+                                let n1 = self.cells.get(H, j - 1);
+                                let n2 = self.cells.get(H, j + 1);
+                                let n3 = self.cells.get(H - 1, j);
+                                let _ = next.set(H, j - 1, n1.unwrap_or(&0) + 1);
+                                let _ = next.set(H, j + 1, n2.unwrap_or(&0) + 1);
+                                let _ = next.set(H - 1, j, n3.unwrap_or(&0) + 1);
                                 continue;
                             }
-                            (i, w) => {
+                            (i, W) => {
                                 //Right edge
                                 let n1 = self.cells.get(i - 1, j);
                                 let n2 = self.cells.get(i, j - 1);
@@ -248,9 +242,17 @@ mod tests {
         u.topple();
 
         // After toppling, center should have 0, neighbors should have 1
-        assert_eq!(*u.cells.get(2, 2).unwrap(), 0, "Center cell should be 0 after toppling");
+        assert_eq!(
+            *u.cells.get(2, 2).unwrap(),
+            0,
+            "Center cell should be 0 after toppling"
+        );
         assert_eq!(*u.cells.get(1, 2).unwrap(), 1, "Top neighbor should be 1");
-        assert_eq!(*u.cells.get(3, 2).unwrap(), 1, "Bottom neighbor should be 1");
+        assert_eq!(
+            *u.cells.get(3, 2).unwrap(),
+            1,
+            "Bottom neighbor should be 1"
+        );
         assert_eq!(*u.cells.get(2, 1).unwrap(), 1, "Left neighbor should be 1");
         assert_eq!(*u.cells.get(2, 3).unwrap(), 1, "Right neighbor should be 1");
     }
@@ -270,9 +272,17 @@ mod tests {
         u.topple();
 
         // Corner cell should distribute to only 2 neighbors
-        assert_eq!(*u.cells.get(0, 0).unwrap(), 0, "Corner cell should be 0 after toppling");
+        assert_eq!(
+            *u.cells.get(0, 0).unwrap(),
+            0,
+            "Corner cell should be 0 after toppling"
+        );
         assert_eq!(*u.cells.get(1, 0).unwrap(), 1, "Right neighbor should be 1");
-        assert_eq!(*u.cells.get(0, 1).unwrap(), 1, "Bottom neighbor should be 1");
+        assert_eq!(
+            *u.cells.get(0, 1).unwrap(),
+            1,
+            "Bottom neighbor should be 1"
+        );
         // Other cells should remain 0
         assert_eq!(*u.cells.get(2, 0).unwrap(), 0);
         assert_eq!(*u.cells.get(0, 2).unwrap(), 0);
@@ -293,10 +303,18 @@ mod tests {
         u.topple();
 
         // Edge cell should distribute to 3 neighbors
-        assert_eq!(*u.cells.get(0, 2).unwrap(), 0, "Edge cell should be 0 after toppling");
+        assert_eq!(
+            *u.cells.get(0, 2).unwrap(),
+            0,
+            "Edge cell should be 0 after toppling"
+        );
         assert_eq!(*u.cells.get(0, 1).unwrap(), 1, "Left neighbor should be 1");
         assert_eq!(*u.cells.get(0, 3).unwrap(), 1, "Right neighbor should be 1");
-        assert_eq!(*u.cells.get(1, 2).unwrap(), 1, "Bottom neighbor should be 1");
+        assert_eq!(
+            *u.cells.get(1, 2).unwrap(),
+            1,
+            "Bottom neighbor should be 1"
+        );
     }
 
     #[test]
@@ -313,7 +331,11 @@ mod tests {
 
         // First topple
         u.topple();
-        assert_eq!(*u.cells.get(2, 2).unwrap(), 1, "Center should have 1 after first topple");
+        assert_eq!(
+            *u.cells.get(2, 2).unwrap(),
+            1,
+            "Center should have 1 after first topple"
+        );
 
         // Neighbors should each have 1
         assert_eq!(*u.cells.get(1, 2).unwrap(), 1);
@@ -345,7 +367,10 @@ mod tests {
 
         // Total grains should have increased
         let sum_after: usize = u.cells().iter().sum();
-        assert!(sum_after > sum_before, "Tick should add grains to the universe");
+        assert!(
+            sum_after > sum_before,
+            "Tick should add grains to the universe"
+        );
     }
 
     #[test]
@@ -395,7 +420,11 @@ mod tests {
     fn test_cells_vector_size() {
         let u = Universe::new();
         let cells = u.cells();
-        assert_eq!(cells.len(), 110 * 110, "Cells vector should have width * height elements");
+        assert_eq!(
+            cells.len(),
+            110 * 110,
+            "Cells vector should have width * height elements"
+        );
     }
 
     #[test]
@@ -418,8 +447,13 @@ mod tests {
 
         // All corners should now be 0
         for (i, j) in corners.iter() {
-            assert_eq!(*u.cells.get(*i, *j).unwrap(), 0,
-                "Corner ({}, {}) should be 0 after toppling", i, j);
+            assert_eq!(
+                *u.cells.get(*i, *j).unwrap(),
+                0,
+                "Corner ({}, {}) should be 0 after toppling",
+                i,
+                j
+            );
         }
     }
 }

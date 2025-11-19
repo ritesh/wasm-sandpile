@@ -1,4 +1,4 @@
-import { Universe } from "wasm-sandpile";
+import { Universe } from "./pkg";
 
 const CELL_SIZE = 5; // pixels
 const GRID_COLOR = "#222222";
