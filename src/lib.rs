@@ -1,5 +1,3 @@
-mod utils;
-
 use array2d::Array2D;
 use rand::distr::Uniform;
 use rand::prelude::Distribution;

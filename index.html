@@ -1,182 +1,188 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Abelian Sandpile Visualization</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background-color: #1a1a1a;
-        color: #ffffff;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      }
 
-      h1 {
-        margin-bottom: 10px;
-        font-size: 2em;
-      }
+<head>
+  <meta charset="utf-8">
+  <title>
+    <%= htmlWebpackPlugin.options.title %>
+  </title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-      .description {
-        max-width: 800px;
-        text-align: center;
-        margin-bottom: 20px;
-        color: #cccccc;
-        line-height: 1.6;
-      }
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
 
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-      }
+    .description {
+      max-width: 800px;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #cccccc;
+      line-height: 1.6;
+    }
 
-      #sandpile-canvas {
-        border: 2px solid #444;
-        background-color: #000;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-      }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
 
-      .controls {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        background-color: #2a2a2a;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      }
+    #sandpile-canvas {
+      border: 2px solid #444;
+      background-color: #000;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
 
-      button {
-        padding: 10px 20px;
-        font-size: 14px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        background-color: #4CAF50;
-        color: white;
-        transition: background-color 0.3s;
-      }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
 
-      button:hover {
-        background-color: #45a049;
-      }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      transition: background-color 0.3s;
+    }
 
-      button:disabled {
-        background-color: #666;
-        cursor: not-allowed;
-      }
+    button:hover {
+      background-color: #45a049;
+    }
 
-      .speed-control {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+    button:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+    }
 
-      .speed-control label {
-        font-size: 14px;
-      }
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-      .speed-control input {
-        width: 150px;
-      }
+    .speed-control label {
+      font-size: 14px;
+    }
 
-      .stats {
-        background-color: #2a2a2a;
-        padding: 15px;
-        border-radius: 8px;
-        min-width: 200px;
-        text-align: center;
-      }
+    .speed-control input {
+      width: 150px;
+    }
 
-      .stats div {
-        margin: 5px 0;
-        font-size: 14px;
-      }
+    .stats {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      min-width: 200px;
+      text-align: center;
+    }
 
-      .legend {
-        display: flex;
-        gap: 15px;
-        background-color: #2a2a2a;
-        padding: 15px;
-        border-radius: 8px;
-        align-items: center;
-      }
+    .stats div {
+      margin: 5px 0;
+      font-size: 14px;
+    }
 
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+    .legend {
+      display: flex;
+      gap: 15px;
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      align-items: center;
+    }
 
-      .legend-color {
-        width: 30px;
-        height: 20px;
-        border: 1px solid #666;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Abelian Sandpile Visualization</h1>
-    <div class="description">
-      <p>
-        The Abelian Sandpile Model is a cellular automaton that demonstrates self-organized criticality.
-        Each cell contains a number of "grains" (0-3). When a cell reaches 4 or more grains, it "topples",
-        distributing grains to its neighbors, creating beautiful fractal patterns.
-      </p>
-    </div>
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    <div class="container">
-      <canvas id="sandpile-canvas"></canvas>
+    .legend-color {
+      width: 30px;
+      height: 20px;
+      border: 1px solid #666;
+    }
+  </style>
+</head>
 
-      <div class="controls">
-        <button id="start-btn">Start</button>
-        <button id="stop-btn" disabled>Stop</button>
-        <button id="reset-btn">Reset</button>
-        <button id="step-btn">Step</button>
-        <div class="speed-control">
-          <label for="speed-slider">Speed:</label>
-          <input type="range" id="speed-slider" min="1" max="60" value="30">
-          <span id="speed-value">30 fps</span>
-        </div>
-      </div>
+<body>
+  <h1>
+    <%= htmlWebpackPlugin.options.title %>
+  </h1>
+  <div class="description">
+    <p>
+      The Abelian Sandpile Model is a cellular automaton that demonstrates self-organized criticality.
+      Each cell contains a number of "grains" (0-3). When a cell reaches 4 or more grains, it "topples",
+      distributing grains to its neighbors, creating beautiful fractal patterns.
+    </p>
+  </div>
 
-      <div class="legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: rgb(0, 0, 0);"></div>
-          <span>0 grains</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: rgb(0, 100, 200);"></div>
-          <span>1 grain</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: rgb(0, 200, 100);"></div>
-          <span>2 grains</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: rgb(255, 200, 0);"></div>
-          <span>3 grains</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: rgb(255, 0, 0);"></div>
-          <span>4+ grains (toppling)</span>
-        </div>
-      </div>
+  <div class="container">
+    <canvas id="sandpile-canvas"></canvas>
 
-      <div class="stats">
-        <div><strong>Statistics</strong></div>
-        <div>Ticks: <span id="tick-count">0</span></div>
-        <div>Grid: <span id="grid-size">-</span></div>
-        <div>Stable: <span id="is-stable">-</span></div>
+    <div class="controls">
+      <button id="start-btn">Start</button>
+      <button id="stop-btn" disabled>Stop</button>
+      <button id="reset-btn">Reset</button>
+      <button id="step-btn">Step</button>
+      <div class="speed-control">
+        <label for="speed-slider">Speed:</label>
+        <input type="range" id="speed-slider" min="1" max="60" value="30">
+        <span id="speed-value">30 fps</span>
       </div>
     </div>
 
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <script src="./bootstrap.js"></script>
-  </body>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: rgb(0, 0, 0);"></div>
+        <span>0 grains</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: rgb(0, 100, 200);"></div>
+        <span>1 grain</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: rgb(0, 200, 100);"></div>
+        <span>2 grains</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: rgb(255, 200, 0);"></div>
+        <span>3 grains</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: rgb(255, 0, 0);"></div>
+        <span>4+ grains (toppling)</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div><strong>Statistics</strong></div>
+      <div>Ticks: <span id="tick-count">0</span></div>
+      <div>Grid: <span id="grid-size">-</span></div>
+      <div>Stable: <span id="is-stable">-</span></div>
+    </div>
+  </div>
+
+  <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+</body>
+
 </html>

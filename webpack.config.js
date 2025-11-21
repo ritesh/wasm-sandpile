@@ -10,7 +10,10 @@ module.exports = {
     filename: 'index.js',
   },
   plugins: [
-    new HtmlWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      title: "Abelian Sandpile Visualisation",
+      template: "index.html"
+    }),
     new WasmPackPlugin({
       crateDirectory: __dirname
     }),

@@ -4,6 +4,8 @@ publish = false
 version = "0.2.0"
 authors = ["Ritesh Sinha <ritsinha@amazon.co.uk>"]
 edition = "2021"
+description = "Visualising the Abelian Sandpile model"
+license = "MIT"
 
 [package.metadata.wasm-pack.profile.release]
 # Wasm-opt breaks
