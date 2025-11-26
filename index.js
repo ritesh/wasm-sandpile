@@ -21,6 +21,12 @@ let fps = 30;
 let lastFrameTime = Date.now();
 let frameDelay = 1000 / fps;
 
+// Transition tracking for blinking effect
+let previousCells = null;
+let transitions = new Map(); // Maps cell index to {oldValue, newValue, startTime}
+const TRANSITION_DURATION = 300; // milliseconds
+const BLINK_INTERVAL = 100; // milliseconds between color switches
+
 // Color mapping for different grain counts
 const getColor = (value) => {
   if (value === 0) return "rgb(0, 0, 0)";      // Black
@@ -28,6 +34,28 @@ const getColor = (value) => {
   if (value === 2) return "rgb(0, 200, 100)";  // Green
   if (value === 3) return "rgb(255, 200, 0)";  // Yellow
   return "rgb(255, 0, 0)";                      // Red (4 or more)
+};
+
+// Detect cell changes and add them to transitions
+const updateTransitions = (oldCells, newCells) => {
+  const now = Date.now();
+
+  for (let i = 0; i < newCells.length; i++) {
+    if (oldCells && oldCells[i] !== newCells[i]) {
+      transitions.set(i, {
+        oldValue: oldCells[i],
+        newValue: newCells[i],
+        startTime: now
+      });
+    }
+  }
+
+  // Remove expired transitions
+  for (const [idx, transition] of transitions.entries()) {
+    if (now - transition.startTime > TRANSITION_DURATION) {
+      transitions.delete(idx);
+    }
+  }
 };
 
 const drawGrid = () => {
@@ -51,6 +79,7 @@ const drawGrid = () => {
 
 const drawCells = () => {
   const cells = universe.cells();
+  const now = Date.now();
 
   ctx.beginPath();
 
@@ -59,7 +88,25 @@ const drawCells = () => {
       const idx = row * width + col;
       const value = cells[idx];
 
-      ctx.fillStyle = getColor(value);
+      let color = getColor(value);
+
+      // Check if this cell is in transition
+      if (transitions.has(idx)) {
+        const transition = transitions.get(idx);
+        const elapsed = now - transition.startTime;
+
+        // Calculate which color to show based on blink interval
+        const blinkCycle = Math.floor(elapsed / BLINK_INTERVAL) % 2;
+
+        // Alternate between old and new colors
+        if (blinkCycle === 0) {
+          color = getColor(transition.oldValue);
+        } else {
+          color = getColor(transition.newValue);
+        }
+      }
+
+      ctx.fillStyle = color;
 
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
@@ -84,15 +131,25 @@ const renderLoop = () => {
   const elapsed = now - lastFrameTime;
 
   if (elapsed > frameDelay) {
+    // Store previous state before ticking
+    const cells = universe.cells();
+    previousCells = Array.from(cells);
+
     universe.tick();
     tickCount++;
 
-    drawGrid();
-    drawCells();
+    // Detect changes and update transitions
+    const newCells = universe.cells();
+    updateTransitions(previousCells, Array.from(newCells));
+
     updateStats();
 
     lastFrameTime = now - (elapsed % frameDelay);
   }
+
+  // Always redraw to show blinking transitions
+  drawGrid();
+  drawCells();
 
   animationId = requestAnimationFrame(renderLoop);
 };
@@ -139,12 +196,34 @@ const step = () => {
     return;
   }
 
+  // Store previous state before ticking
+  const cells = universe.cells();
+  previousCells = Array.from(cells);
+
   universe.tick();
   tickCount++;
+
+  // Detect changes and update transitions
+  const newCells = universe.cells();
+  updateTransitions(previousCells, Array.from(newCells));
 
   drawGrid();
   drawCells();
   updateStats();
+
+  // Continue rendering for transition animation
+  if (transitions.size > 0) {
+    const animateTransitions = () => {
+      drawGrid();
+      drawCells();
+
+      // Keep animating while transitions are active
+      if (transitions.size > 0 && isPaused()) {
+        requestAnimationFrame(animateTransitions);
+      }
+    };
+    requestAnimationFrame(animateTransitions);
+  }
 };
 
 // UI Controls
