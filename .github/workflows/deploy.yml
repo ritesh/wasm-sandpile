@@ -45,20 +45,18 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: www/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./www
         run: npm ci
 
       - name: Build web application
-        working-directory: ./www
         run: npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./www/dist
+          path: ./dist
 
   deploy:
     environment:
