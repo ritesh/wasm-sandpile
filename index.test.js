@@ -21,6 +21,18 @@ describe('Sandpile Visualization', () => {
   let canvas, ctx;
 
   beforeEach(() => {
+    // Mock canvas context
+    const mockContext = {
+      fillStyle: '',
+      strokeStyle: '',
+      beginPath: jest.fn(),
+      stroke: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      fillRect: jest.fn(),
+      clearRect: jest.fn(),
+    };
+
     // Set up a mock canvas
     document.body.innerHTML = `
       <canvas id="sandpile-canvas"></canvas>
@@ -36,6 +48,7 @@ describe('Sandpile Visualization', () => {
     `;
 
     canvas = document.getElementById('sandpile-canvas');
+    canvas.getContext = jest.fn(() => mockContext);
     ctx = canvas.getContext('2d');
   });
 

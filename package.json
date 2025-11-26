@@ -5,13 +5,34 @@
   "author": "Ritesh Sinha",
   "scripts": {
     "build": "webpack",
-    "serve": "webpack serve"
+    "serve": "webpack serve",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@testing-library/dom": "^9.3.0",
     "@wasm-tool/wasm-pack-plugin": "*",
+    "babel-jest": "^29.7.0",
     "html-webpack-plugin": "*",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "webpack": "^5.103.0",
     "webpack-cli": "*",
     "webpack-dev-server": "*"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleNameMapper": {
+      "^./pkg$": "<rootDir>/__mocks__/pkg.js"
+    },
+    "testMatch": [
+      "**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "index.js"
+    ]
   }
 }
