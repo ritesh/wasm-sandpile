@@ -1,11 +1,8 @@
-use core::panic;
 use rand::distr::Uniform;
 use rand::prelude::Distribution;
-use std::sync::{Arc, Mutex};
 
 use wasm_bindgen::prelude::*;
 
-const MAX_ITERATIONS: u32 = 10_000;
 const WIDTH: usize = 110;
 const HEIGHT: usize = 110;
 
@@ -13,56 +10,80 @@ const HEIGHT: usize = 110;
 pub struct Universe {
     width: usize,
     height: usize,
-    cells: Arc<Mutex<Vec<usize>>>,
-    //contains indices of unstable cells i.e. greater than or eq 4
-    unstable: Arc<Mutex<Vec<usize>>>,
+    cells: Vec<usize>,
 }
 
 #[wasm_bindgen]
 impl Universe {
     pub fn new() -> Universe {
         let mut rng = rand::rng();
-        let cells = Vec::<usize>::with_capacity(WIDTH * HEIGHT)
-            .iter()
-            .map(|_| Uniform::<usize>::new(0, 3).unwrap().sample(&mut rng))
+        let dist = Uniform::<usize>::new(0, 4).unwrap();
+        let cells: Vec<usize> = (0..WIDTH * HEIGHT)
+            .map(|_| dist.sample(&mut rng))
             .collect();
 
-        //  println!("Cells {:?}", cells);
         Universe {
             width: WIDTH,
             height: HEIGHT,
-            cells: Arc::new(Mutex::new(cells)),
-            unstable: Arc::new(Mutex::new(Vec::new())),
+            cells,
         }
     }
 
-    pub fn tick(&mut self) {}
+    pub fn width(&self) -> usize {
+        self.width
+    }
 
-    pub fn stable(&self) -> bool {
-        //If any of the cells have 4 or more, this configuration is unstable
-        let cells = self.cells.lock().unwrap();
-        let mut unstable = self.unstable.lock().unwrap();
-        for (idx, elem) in cells.iter().enumerate() {
-            if *elem >= 4 {
-                unstable.push(idx)
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn cells(&self) -> Vec<usize> {
+        self.cells.clone()
+    }
+
+    pub fn tick(&mut self) {
+        let mut next = self.cells.clone();
+
+        // Find all cells that need to topple (>= 4 grains)
+        let mut to_topple = Vec::new();
+        for (idx, &value) in self.cells.iter().enumerate() {
+            if value >= 4 {
+                to_topple.push(idx);
             }
         }
-        unstable.is_empty()
-    }
-    pub fn topple(&mut self) {
-        let mut rng = rand::rng();
-        while !self.stable() {
-            let mut cells = self.cells.lock().unwrap();
-            let mut unstable = self.unstable.lock().unwrap();
-            //random number picker
-            let unstable_len = self.unstable.lock().unwrap().len();
-            let pick_unstable_idx = Uniform::new(0, unstable_len).unwrap().sample(&mut rng);
-            let cell_idx = unstable[pick_unstable_idx];
 
-            //Last step
-            //probably not efficient
-            unstable.remove(pick_unstable_idx);
+        // Topple all unstable cells
+        for idx in to_topple {
+            let row = idx / self.width;
+            let col = idx % self.width;
+
+            // Remove 4 grains from current cell
+            next[idx] = next[idx].saturating_sub(4);
+
+            // Add 1 grain to each neighbor (if it exists)
+            // Top neighbor
+            if row > 0 {
+                next[idx - self.width] += 1;
+            }
+            // Bottom neighbor
+            if row < self.height - 1 {
+                next[idx + self.width] += 1;
+            }
+            // Left neighbor
+            if col > 0 {
+                next[idx - 1] += 1;
+            }
+            // Right neighbor
+            if col < self.width - 1 {
+                next[idx + 1] += 1;
+            }
         }
+
+        self.cells = next;
+    }
+
+    pub fn stable(&self) -> bool {
+        self.cells.iter().all(|&cell| cell < 4)
     }
 }
 
