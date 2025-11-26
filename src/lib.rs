@@ -42,44 +42,53 @@ impl Universe {
     }
 
     pub fn tick(&mut self) {
-        let mut next = self.cells.clone();
+        // Step 1: Add one grain of sand to a uniformly random cell
+        let mut rng = rand::rng();
+        let dist = Uniform::<usize>::new(0, self.cells.len()).unwrap();
+        let random_idx = dist.sample(&mut rng);
+        self.cells[random_idx] += 1;
 
-        // Find all cells that need to topple (>= 4 grains)
-        let mut to_topple = Vec::new();
-        for (idx, &value) in self.cells.iter().enumerate() {
-            if value >= 4 {
-                to_topple.push(idx);
+        // Step 2: Topple repeatedly until the configuration is stable
+        while !self.stable() {
+            let mut next = self.cells.clone();
+
+            // Find all cells that need to topple (>= 4 grains)
+            let mut to_topple = Vec::new();
+            for (idx, &value) in self.cells.iter().enumerate() {
+                if value >= 4 {
+                    to_topple.push(idx);
+                }
             }
+
+            // Topple all unstable cells
+            for idx in to_topple {
+                let row = idx / self.width;
+                let col = idx % self.width;
+
+                // Remove 4 grains from current cell
+                next[idx] = next[idx].saturating_sub(4);
+
+                // Add 1 grain to each neighbor (if it exists)
+                // Top neighbor
+                if row > 0 {
+                    next[idx - self.width] += 1;
+                }
+                // Bottom neighbor
+                if row < self.height - 1 {
+                    next[idx + self.width] += 1;
+                }
+                // Left neighbor
+                if col > 0 {
+                    next[idx - 1] += 1;
+                }
+                // Right neighbor
+                if col < self.width - 1 {
+                    next[idx + 1] += 1;
+                }
+            }
+
+            self.cells = next;
         }
-
-        // Topple all unstable cells
-        for idx in to_topple {
-            let row = idx / self.width;
-            let col = idx % self.width;
-
-            // Remove 4 grains from current cell
-            next[idx] = next[idx].saturating_sub(4);
-
-            // Add 1 grain to each neighbor (if it exists)
-            // Top neighbor
-            if row > 0 {
-                next[idx - self.width] += 1;
-            }
-            // Bottom neighbor
-            if row < self.height - 1 {
-                next[idx + self.width] += 1;
-            }
-            // Left neighbor
-            if col > 0 {
-                next[idx - 1] += 1;
-            }
-            // Right neighbor
-            if col < self.width - 1 {
-                next[idx + 1] += 1;
-            }
-        }
-
-        self.cells = next;
     }
 
     pub fn stable(&self) -> bool {
@@ -132,133 +141,79 @@ mod tests {
     }
 
     #[test]
-    fn test_tick_topples_single_cell() {
+    fn test_tick_always_produces_stable_state() {
+        let mut universe = Universe::new();
+        universe.cells = vec![0; WIDTH * HEIGHT];
+
+        // Test with all zeros - should add 1 grain and remain stable
+        universe.tick();
+        assert!(universe.stable(), "Universe should be stable after tick");
+
+        // Test with some threes - should still be stable after tick
+        universe.cells = vec![3; WIDTH * HEIGHT];
+        universe.tick();
+        assert!(universe.stable(), "Universe should be stable after tick");
+    }
+
+    #[test]
+    fn test_tick_with_unstable_initial_state() {
         let mut universe = Universe::new();
         universe.cells = vec![0; WIDTH * HEIGHT];
 
         // Place 4 grains in the center
-        let center_row = HEIGHT / 2;
-        let center_col = WIDTH / 2;
-        let center_idx = center_row * WIDTH + center_col;
+        let center_idx = (HEIGHT / 2) * WIDTH + (WIDTH / 2);
         universe.cells[center_idx] = 4;
 
-        universe.tick();
-
-        // After toppling, center should have 0 and neighbors should each have 1
-        assert_eq!(universe.cells[center_idx], 0);
-        assert_eq!(universe.cells[center_idx - WIDTH], 1); // top
-        assert_eq!(universe.cells[center_idx + WIDTH], 1); // bottom
-        assert_eq!(universe.cells[center_idx - 1], 1);     // left
-        assert_eq!(universe.cells[center_idx + 1], 1);     // right
-    }
-
-    #[test]
-    fn test_tick_top_left_corner() {
-        let mut universe = Universe::new();
-        universe.cells = vec![0; WIDTH * HEIGHT];
-
-        // Place 4 grains in top-left corner (0, 0)
-        universe.cells[0] = 4;
+        // Universe is initially unstable
+        assert!(!universe.stable());
 
         universe.tick();
 
-        // After toppling, corner should have 0
-        assert_eq!(universe.cells[0], 0);
-        // Only right and bottom neighbors should get grains
-        assert_eq!(universe.cells[1], 1);        // right
-        assert_eq!(universe.cells[WIDTH], 1);    // bottom
+        // After tick, should be stable
+        assert!(universe.stable(), "Universe should be stable after tick");
     }
 
     #[test]
-    fn test_tick_top_right_corner() {
+    fn test_tick_with_multiple_unstable_cells() {
         let mut universe = Universe::new();
         universe.cells = vec![0; WIDTH * HEIGHT];
 
-        // Place 4 grains in top-right corner (0, WIDTH-1)
-        let idx = WIDTH - 1;
-        universe.cells[idx] = 4;
+        // Place 4 grains in multiple cells
+        universe.cells[100] = 4;
+        universe.cells[101] = 4;
+        universe.cells[200] = 5;
+
+        // Universe is initially unstable
+        assert!(!universe.stable());
 
         universe.tick();
 
-        // After toppling, corner should have 0
-        assert_eq!(universe.cells[idx], 0);
-        // Only left and bottom neighbors should get grains
-        assert_eq!(universe.cells[idx - 1], 1);        // left
-        assert_eq!(universe.cells[idx + WIDTH], 1);    // bottom
+        // After tick, should be stable
+        assert!(universe.stable(), "Universe should be stable after tick");
+        // All cells should have less than 4 grains
+        for &cell in universe.cells.iter() {
+            assert!(cell < 4, "Cell has {} grains, should be < 4", cell);
+        }
     }
 
     #[test]
-    fn test_tick_bottom_left_corner() {
+    fn test_tick_cascading_topple() {
         let mut universe = Universe::new();
         universe.cells = vec![0; WIDTH * HEIGHT];
 
-        // Place 4 grains in bottom-left corner
-        let idx = (HEIGHT - 1) * WIDTH;
-        universe.cells[idx] = 4;
-
-        universe.tick();
-
-        // After toppling, corner should have 0
-        assert_eq!(universe.cells[idx], 0);
-        // Only right and top neighbors should get grains
-        assert_eq!(universe.cells[idx + 1], 1);        // right
-        assert_eq!(universe.cells[idx - WIDTH], 1);    // top
-    }
-
-    #[test]
-    fn test_tick_bottom_right_corner() {
-        let mut universe = Universe::new();
-        universe.cells = vec![0; WIDTH * HEIGHT];
-
-        // Place 4 grains in bottom-right corner
-        let idx = WIDTH * HEIGHT - 1;
-        universe.cells[idx] = 4;
-
-        universe.tick();
-
-        // After toppling, corner should have 0
-        assert_eq!(universe.cells[idx], 0);
-        // Only left and top neighbors should get grains
-        assert_eq!(universe.cells[idx - 1], 1);        // left
-        assert_eq!(universe.cells[idx - WIDTH], 1);    // top
-    }
-
-    #[test]
-    fn test_tick_multiple_unstable_cells() {
-        let mut universe = Universe::new();
-        universe.cells = vec![0; WIDTH * HEIGHT];
-
-        // Place 4 grains in two adjacent cells
-        let idx1 = 100;
-        let idx2 = 101;
-        universe.cells[idx1] = 4;
-        universe.cells[idx2] = 4;
-
-        universe.tick();
-
-        // Both cells should be toppled
-        assert!(universe.cells[idx1] < 4);
-        assert!(universe.cells[idx2] < 4);
-    }
-
-    #[test]
-    fn test_tick_with_value_greater_than_four() {
-        let mut universe = Universe::new();
-        universe.cells = vec![0; WIDTH * HEIGHT];
-
-        // Place 8 grains in center
+        // Create a configuration that will cause cascading topples
+        // Set up cells that will trigger each other
         let center_idx = (HEIGHT / 2) * WIDTH + (WIDTH / 2);
-        universe.cells[center_idx] = 8;
+        universe.cells[center_idx] = 3;
+        universe.cells[center_idx - WIDTH] = 3;
+        universe.cells[center_idx + WIDTH] = 3;
+        universe.cells[center_idx - 1] = 3;
+        universe.cells[center_idx + 1] = 3;
 
         universe.tick();
 
-        // After one tick, center should have 4 (8 - 4)
-        assert_eq!(universe.cells[center_idx], 4);
-        // Neighbors should each have 1
-        assert_eq!(universe.cells[center_idx - WIDTH], 1);
-        assert_eq!(universe.cells[center_idx + WIDTH], 1);
-        assert_eq!(universe.cells[center_idx - 1], 1);
-        assert_eq!(universe.cells[center_idx + 1], 1);
+        // After tick with cascading topples, should still be stable
+        assert!(universe.stable(), "Universe should be stable after cascading topples");
     }
 
     #[test]
@@ -282,13 +237,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tick_preserves_total_grains_in_interior() {
+    fn test_tick_increases_total_grains() {
         let mut universe = Universe::new();
-        universe.cells = vec![3; WIDTH * HEIGHT];
-
-        // Set a single cell to 4 in the interior (not on edge)
-        let center_idx = (HEIGHT / 2) * WIDTH + (WIDTH / 2);
-        universe.cells[center_idx] = 4;
+        universe.cells = vec![0; WIDTH * HEIGHT];
 
         // Count total grains before
         let total_before: usize = universe.cells.iter().sum();
@@ -298,7 +249,15 @@ mod tests {
         // Count total grains after
         let total_after: usize = universe.cells.iter().sum();
 
-        // Total should be preserved for interior cells
-        assert_eq!(total_before, total_after);
+        // Total should increase by 1 (we add 1 grain)
+        // Note: grains can be lost at boundaries during toppling
+        assert!(
+            total_after >= total_before,
+            "Total grains should not decrease"
+        );
+        assert!(
+            total_after <= total_before + 1,
+            "Total grains should increase by at most 1"
+        );
     }
 }
